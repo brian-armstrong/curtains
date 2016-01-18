@@ -9,9 +9,16 @@ import (
 
 const (
 	GPIO22 rpio.Pin = 22  // header pin 15
-	GPIO23 rpio.Pin = 23  // header pin 16
-	GPIO24 rpio.Pin = 24  // header pin 18
-	GPIO27 rpio.Pin = 27  // header pin 13
+	GPIO23 = 23  // header pin 16
+	GPIO24 = 24  // header pin 18
+	GPIO27 = 27  // header pin 13
+)
+
+const (
+	MotorLeftGround rpio.Pin = GPIO27
+	MotorLeftVCC = GPIO22
+	MotorRightGround = GPIO23
+	MotorRightGround = GPIO24
 )
 
 func main() {
@@ -22,7 +29,7 @@ func main() {
 
 	defer rpio.Close()
 
-	pin := rpio.Pin(GPIO22)
+	pin := MotorLeftVCC
 
 	pin.Output()
 
