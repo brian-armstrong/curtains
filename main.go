@@ -10,102 +10,59 @@ import (
 const (
 	GPIO22 rpio.Pin = 22  // header pin 15
 	GPIO23 = 23  // header pin 16
-	GPIO24 = 24  // header pin 18
-	GPIO27 = 27  // header pin 13
 )
 
 const (
-	MotorLeftGround rpio.Pin = GPIO27
-	MotorLeftVCC = GPIO22
-	MotorRightGround = GPIO23
-	MotorRightVCC = GPIO24
+	MotorLeft rpio.Pin = GPIO22
+	MotorRight = GPIO23
 )
-
-type TerminalActivation int
-
-const (
-	NeitherActivated TerminalActivation = 0
-	LeftActivated
-	RightActivated
-)
-
-type MotorTerminal struct {
-	ground rpio.Pin
-	vcc rpio.Pin
-	activation TerminalActivation
-}
-
-func NewMotorTerminal(ground rpio.Pin, vcc rpio.Pin) *MotorTerminal {
-	mt := MotorTerminal {
-		ground: ground,
-		vcc: vcc,
-		activation: NeitherActivated,
-	}
-
-	mt.ground.Low()
-	mt.ground.Output()
-
-	mt.vcc.Low()
-	mt.vcc.Output()
-
-	return &mt
-}
-
-func (mt *MotorTerminal) Ground() {
-	mt.vcc.Low()
-	mt.ground.High()
-}
-
-func (mt *MotorTerminal) VCC() {
-	mt.ground.Low()
-	mt.vcc.High()
-}
-
-func (mt *MotorTerminal) Disconnect() {
-	mt.ground.Low()
-	mt.vcc.Low()
-}
 
 type MotorDirection int
 
 const (
 	StopDirection MotorDirection = 0
-	LeftDirection
-	RightDirection
+	ClockwiseDirection
+	CounterclockwiseDirection
 )
 
 type Motor struct {
-	left *MotorTerminal
-	right *MotorTerminal
+	left rpio.Pin
+	right rpio.Pin
 	direction MotorDirection
 }
 
-func NewMotor(left *MotorTerminal, right *MotorTerminal) *Motor {
+func NewMotor(left rpio.Pin, right rpio.Pin) *Motor {
 	m := Motor {
 		left: left,
 		right: right,
 		direction: StopDirection,
 	}
 
-	m.left.Disconnect()
-	m.right.Disconnect()
+	m.left.Low()
+	m.right.Low()
+
+	m.left.Output()
+	m.right.Output()
 
 	return &m
 }
 
 func (m *Motor) Clockwise() {
-	m.left.VCC()
-	m.right.Ground()
+	m.left.High()
+	m.right.Low()
+	m.direction = ClockwiseDirection
 }
 
 func (m *Motor) Counterclockwise() {
-	m.left.Ground()
-	m.right.VCC()
+	m.left.Low()
+	m.right.High()
+	m.direction = CounterclockwiseDirection
 }
 
 func (m *Motor) Stop() {
-	m.left.Ground()
-	m.right.Ground()
+	m.left.Low()
+	m.right.Low()
+	m.direction = StopDirection
 }
 
 func main() {
@@ -116,9 +73,7 @@ func main() {
 
 	defer rpio.Close()
 
-	leftTerm := NewMotorTerminal(MotorLeftGround, MotorLeftVCC)
-	rightTerm := NewMotorTerminal(MotorRightGround, MotorRightVCC)
-	motor := NewMotor(leftTerm, rightTerm)
+	motor := NewMotor(MotorLeft, MotorRight)
 
 	for x := 0; x < 20; x++ {
 		motor.Clockwise()
