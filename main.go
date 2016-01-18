@@ -18,7 +18,7 @@ const (
 	MotorLeftGround rpio.Pin = GPIO27
 	MotorLeftVCC = GPIO22
 	MotorRightGround = GPIO23
-	MotorRightGround = GPIO24
+	MotorRightVCC = GPIO24
 )
 
 func main() {
