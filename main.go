@@ -66,6 +66,48 @@ func (mt *MotorTerminal) Disconnect() {
 	mt.vcc.Low()
 }
 
+type MotorDirection int
+
+const (
+	StopDirection MotorDirection = 0
+	LeftDirection
+	RightDirection
+)
+
+type Motor struct {
+	left MotorTerminal
+	right MotorTerminal
+	direction MotorDirection
+}
+
+func NewMotor(left *MotorTerminal, right *MotorTerminal) *Motor {
+	m := Motor {
+		left: left,
+		right: right,
+		direction: StopDirection,
+	}
+
+	m.left.Disconnect()
+	m.right.Disconnect()
+
+	return &m
+}
+
+func (m *Motor) Clockwise() {
+	m.left.VCC()
+	m.right.Ground()
+}
+
+func (m *Motor) Counterclockwise() {
+	m.left.Ground()
+	m.right.VCC()
+}
+
+func (m *Motor) Stop() {
+	m.left.Ground()
+	m.right.Ground()
+}
+
 func main() {
 	if err := rpio.Open(); err != nil {
 		fmt.Println(err)
@@ -76,13 +118,14 @@ func main() {
 
 	leftTerm := NewMotorTerminal(MotorLeftGround, MotorLeftVCC)
 	rightTerm := NewMotorTerminal(MotorRightGround, MotorRightVCC)
+	motor := NewMotor(leftTerm, rightTerm)
 
 	for x := 0; x < 20; x++ {
-		leftTerm.Ground()
-		rightTerm.VCC()
+		motor.Clockwise()
 		time.Sleep(time.Second)
-		rightTerm.Ground()
-		leftTerm.VCC()
+		motor.Counterclockwise()
+		time.Sleep(time.Second)
+		motor.Stop()
 		time.Sleep(time.Second)
 	}
 }
