@@ -75,8 +75,8 @@ const (
 )
 
 type Motor struct {
-	left MotorTerminal
-	right MotorTerminal
+	left *MotorTerminal
+	right *MotorTerminal
 	direction MotorDirection
 }
 
