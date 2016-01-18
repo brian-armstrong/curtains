@@ -21,6 +21,51 @@ const (
 	MotorRightVCC = GPIO24
 )
 
+type TerminalActivation int
+
+const (
+	NeitherActivated TerminalActivation = 0
+	LeftActivated
+	RightActivated
+)
+
+type MotorTerminal struct {
+	ground rpio.Pin
+	vcc rpio.Pin
+	activation TerminalActivation
+}
+
+func NewMotorTerminal(ground rpio.Pin, vcc rpio.Pin) *MotorTerminal {
+	mt := MotorTerminal {
+		ground: ground,
+		vcc: vcc,
+		activation: NeitherActivated,
+	}
+
+	mt.ground.Low()
+	mt.ground.Output()
+
+	mt.vcc.Low()
+	mt.vcc.Output()
+
+	return &mt
+}
+
+func (mt *MotorTerminal) Ground() {
+	mt.vcc.Low()
+	mt.ground.High()
+}
+
+func (mt *MotorTerminal) VCC() {
+	mt.ground.Low()
+	mt.vcc.High()
+}
+
+func (mt *MotorTerminal) Disconnect() {
+	mt.ground.Low()
+	mt.vcc.Low()
+}
+
 func main() {
 	if err := rpio.Open(); err != nil {
 		fmt.Println(err)
@@ -29,12 +74,15 @@ func main() {
 
 	defer rpio.Close()
 
-	pin := MotorLeftVCC
-
-	pin.Output()
+	leftTerm := NewMotorTerminal(MotorLeftGround, MotorLeftVCC)
+	rightTerm := NewMotorTerminal(MotorRightGround, MotorRightVCC)
 
 	for x := 0; x < 20; x++ {
-		pin.Toggle()
+		leftTerm.Ground()
+		rightTerm.VCC()
+		time.Sleep(time.Second)
+		rightTerm.Ground()
+		leftTerm.VCC()
 		time.Sleep(time.Second)
 	}
 }
