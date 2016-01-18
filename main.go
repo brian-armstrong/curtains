@@ -79,10 +79,10 @@ func main() {
 		motor.Clockwise()
 		time.Sleep(time.Second)
 		motor.Stop()
-		time.Sleep(0.5 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 		motor.Counterclockwise()
 		time.Sleep(time.Second)
 		motor.Stop()
-		time.Sleep(0.5 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
