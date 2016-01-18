@@ -1,0 +1,11 @@
+{
+	"ImportPath": "github.com/brian-armstrong/curtains",
+	"GoVersion": "devel",
+	"Deps": [
+		{
+			"ImportPath": "github.com/stianeikeland/go-rpio",
+			"Comment": "v3.0.0",
+			"Rev": "896db2ee1c7f95240dd6a09e56edf9cece107a34"
+		}
+	]
+}
