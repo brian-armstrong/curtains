@@ -38,8 +38,8 @@ func NewMotor(left rpio.Pin, right rpio.Pin) *Motor {
 		direction: StopDirection,
 	}
 
-	m.left.Low()
-	m.right.Low()
+	m.left.High()
+	m.right.High()
 
 	m.left.Output()
 	m.right.Output()
@@ -48,20 +48,20 @@ func NewMotor(left rpio.Pin, right rpio.Pin) *Motor {
 }
 
 func (m *Motor) Clockwise() {
-	m.left.High()
-	m.right.Low()
+	m.left.Low()
+	m.right.High()
 	m.direction = ClockwiseDirection
 }
 
 func (m *Motor) Counterclockwise() {
-	m.left.Low()
-	m.right.High()
+	m.left.High()
+	m.right.Low()
 	m.direction = CounterclockwiseDirection
 }
 
 func (m *Motor) Stop() {
-	m.left.Low()
-	m.right.Low()
+	m.left.High()
+	m.right.High()
 	m.direction = StopDirection
 }
 
