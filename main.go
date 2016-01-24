@@ -2,20 +2,26 @@ package main
 
 import (
 	"fmt"
-	"github.com/stianeikeland/go-rpio"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/stianeikeland/go-rpio"
 )
 
 const (
-	GPIO22 rpio.Pin = 22 // header pin 15
+	GPIO17 rpio.Pin = 17 // header pin 11
+	GPIO22          = 22 // header pin 15
 	GPIO23          = 23 // header pin 16
+	GPIO27          = 27 // header pin 13
 )
 
 const (
-	MotorLeft  rpio.Pin = GPIO22
-	MotorRight          = GPIO23
+	MotorLeft   rpio.Pin = GPIO22
+	MotorRight           = GPIO23
+	SwitchLeft  rpio.Pin = GPIO17
+	SwitchRight rpio.Pin = GPIO27
 )
 
 type MotorDirection int
@@ -92,8 +98,38 @@ func exportGPIO(p rpio.Pin) {
 	edge.Write([]byte("both"))
 }
 
+func watchGPIO(p rpio.Pin) chan []byte {
+	exportGPIO(p)
+	value, err := os.Open(fmt.Sprintf("/sys/class/gpio/gpio%d/value", p))
+	if err != nil {
+		os.Exit(1)
+	}
+	c := make(chan []byte)
+	go func() {
+		defer value.Close()
+		for {
+			b, err := ioutil.ReadAll(value)
+			if err != nil {
+				os.Exit(1)
+			}
+			c <- b
+		}
+	}()
+	return c
+}
+
 func main() {
-	exportGPIO(GPIO22)
+	leftChan := watchGPIO(SwitchLeft)
+	rightChan := watchGPIO(SwitchRight)
+
+	go func() {
+		select {
+		case b := <-leftChan:
+			fmt.Printf("read %s from left switch\n", string(b))
+		case b := <-rightChan:
+			fmt.Printf("read %s from right switch\n", string(b))
+		}
+	}()
 
 	if err := rpio.Open(); err != nil {
 		fmt.Println(err)
