@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/stianeikeland/go-rpio"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -65,7 +66,27 @@ func (m *Motor) Stop() {
 	m.direction = StopDirection
 }
 
+func exportGPIO(p rpio.Pin) {
+	export, err := os.OpenFile("/sys/class/gpio/export", os.O_WRONLY, 0600)
+	if err != nil {
+		os.Exit(1)
+	}
+	defer export.Close()
+
+	export.Write([]byte(strconv.Itoa(int(p))))
+
+	dir, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/direction", p), os.O_WRONLY, 0600)
+	if err != nil {
+		os.Exit(1)
+	}
+	defer dir.Close()
+
+	dir.Write([]byte("in"))
+}
+
 func main() {
+	exportGPIO(GPIO22)
+
 	if err := rpio.Open(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
