@@ -75,6 +75,7 @@ func (m *Motor) Stop() {
 func exportGPIO(p rpio.Pin) {
 	export, err := os.OpenFile("/sys/class/gpio/export", os.O_WRONLY, 0600)
 	if err != nil {
+		fmt.Printf("failed to open gpio export file for writing\n")
 		os.Exit(1)
 	}
 	defer export.Close()
@@ -83,6 +84,7 @@ func exportGPIO(p rpio.Pin) {
 
 	dir, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/direction", p), os.O_WRONLY, 0600)
 	if err != nil {
+		fmt.Printf("failed to open gpio %d direction file for writing\n", p)
 		os.Exit(1)
 	}
 	defer dir.Close()
@@ -91,6 +93,7 @@ func exportGPIO(p rpio.Pin) {
 
 	edge, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/edge", p), os.O_WRONLY, 0600)
 	if err != nil {
+		fmt.Printf("failed to open gpio %d edge file for writing\n", p)
 		os.Exit(1)
 	}
 	defer edge.Close()
@@ -102,6 +105,7 @@ func watchGPIO(p rpio.Pin) chan []byte {
 	exportGPIO(p)
 	value, err := os.Open(fmt.Sprintf("/sys/class/gpio/gpio%d/value", p))
 	if err != nil {
+		fmt.Printf("failed to open gpio %d value file for writing\n", p)
 		os.Exit(1)
 	}
 	c := make(chan []byte)
