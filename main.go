@@ -127,11 +127,13 @@ func main() {
 	rightChan := watchGPIO(SwitchRight)
 
 	go func() {
-		select {
-		case b := <-leftChan:
-			fmt.Printf("read %s from left switch\n", string(b))
-		case b := <-rightChan:
-			fmt.Printf("read %s from right switch\n", string(b))
+		for {
+			select {
+			case b := <-leftChan:
+				fmt.Printf("read %s from left switch\n", string(b))
+			case b := <-rightChan:
+				fmt.Printf("read %s from right switch\n", string(b))
+			}
 		}
 	}()
 
