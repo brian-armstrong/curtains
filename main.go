@@ -82,6 +82,14 @@ func exportGPIO(p rpio.Pin) {
 	defer dir.Close()
 
 	dir.Write([]byte("in"))
+
+	edge, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/edge", p), os.O_WRONLY, 0600)
+	if err != nil {
+		os.Exit(1)
+	}
+	defer edge.Close()
+
+	edge.Write([]byte("both"))
 }
 
 func main() {
