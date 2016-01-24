@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	GPIO22 rpio.Pin = 22  // header pin 15
-	GPIO23 = 23  // header pin 16
+	GPIO22 rpio.Pin = 22 // header pin 15
+	GPIO23          = 23 // header pin 16
 )
 
 const (
-	MotorLeft rpio.Pin = GPIO22
-	MotorRight = GPIO23
+	MotorLeft  rpio.Pin = GPIO22
+	MotorRight          = GPIO23
 )
 
 type MotorDirection int
@@ -26,15 +26,15 @@ const (
 )
 
 type Motor struct {
-	left rpio.Pin
-	right rpio.Pin
+	left      rpio.Pin
+	right     rpio.Pin
 	direction MotorDirection
 }
 
 func NewMotor(left rpio.Pin, right rpio.Pin) *Motor {
-	m := Motor {
-		left: left,
-		right: right,
+	m := Motor{
+		left:      left,
+		right:     right,
 		direction: StopDirection,
 	}
 
