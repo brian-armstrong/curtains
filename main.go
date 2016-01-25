@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/brian-armstrong/curtains/gpiowatcher"
+	"github.com/brian-armstrong/gpio"
 
 	"github.com/stianeikeland/go-rpio"
 )
@@ -72,9 +72,9 @@ func (m *Motor) Stop() {
 	m.direction = StopDirection
 }
 func main() {
-	watcher := gpiowatcher.NewGpioWatcher()
-	watcher.AddPin(gpiowatcher.Pin(SwitchLeft))
-	watcher.AddPin(gpiowatcher.Pin(SwitchRight))
+	watcher := gpio.NewWatcher()
+	watcher.AddPin(gpio.Pin(SwitchLeft))
+	watcher.AddPin(gpio.Pin(SwitchRight))
 	defer watcher.Close()
 
 	go func() {
