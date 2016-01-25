@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"strconv"
-	"sync"
 	"syscall"
 	"time"
 
@@ -75,35 +74,6 @@ func (m *Motor) Stop() {
 	m.direction = StopDirection
 }
 
-func exportGPIO(p rpio.Pin) {
-	export, err := os.OpenFile("/sys/class/gpio/export", os.O_WRONLY, 0600)
-	if err != nil {
-		fmt.Printf("failed to open gpio export file for writing\n")
-		os.Exit(1)
-	}
-	defer export.Close()
-
-	export.Write([]byte(strconv.Itoa(int(p))))
-
-	dir, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/direction", p), os.O_WRONLY, 0600)
-	if err != nil {
-		fmt.Printf("failed to open gpio %d direction file for writing\n", p)
-		os.Exit(1)
-	}
-	defer dir.Close()
-
-	dir.Write([]byte("in"))
-
-	edge, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/edge", p), os.O_WRONLY, 0600)
-	if err != nil {
-		fmt.Printf("failed to open gpio %d edge file for writing\n", p)
-		os.Exit(1)
-	}
-	defer edge.Close()
-
-	edge.Write([]byte("both"))
-}
-
 type watcherAction int
 
 const (
@@ -113,8 +83,13 @@ const (
 )
 
 type watcherCmd struct {
-	fd     uintptr
+	pin    rpio.Pin
 	action watcherAction
+}
+
+type watcherNotify struct {
+	pin   rpio.Pin
+	value uint
 }
 
 type FDHeap []uintptr
@@ -149,21 +124,20 @@ const watcherCmdChanLen = 32
 const notifyChanLen = 32
 
 type GpioWatcher struct {
-	sync.RWMutex
-	pins       map[rpio.Pin]*os.File
+	pins       map[uintptr]rpio.Pin
 	files      map[uintptr]*os.File
 	fds        FDHeap
 	cmdChan    chan watcherCmd
-	notifyChan chan uintptr
+	notifyChan chan watcherNotify
 }
 
 func NewGpioWatcher() *GpioWatcher {
 	gw := &GpioWatcher{
-		pins:       make(map[rpio.Pin]*os.File),
+		pins:       make(map[uintptr]rpio.Pin),
 		files:      make(map[uintptr]*os.File),
 		fds:        FDHeap{},
 		cmdChan:    make(chan watcherCmd, watcherCmdChanLen),
-		notifyChan: make(chan uintptr, notifyChanLen),
+		notifyChan: make(chan watcherNotify, notifyChanLen),
 	}
 	heap.Init(&gw.fds)
 	go gw.watch()
@@ -173,8 +147,33 @@ func NewGpioWatcher() *GpioWatcher {
 func (gw *GpioWatcher) notify(fdset *syscall.FdSet) {
 	for _, fd := range gw.fds {
 		if (fdset.Bits[fd/64] & (1 << uint(fd) % 64)) != 0 {
+			file := gw.files[fd]
+			file.Seek(0, 0)
+			buf := make([]byte, 1)
+			_, err := file.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					gw.removeFd(fd)
+					continue
+				}
+				fmt.Printf("failed to read pinfile, %s", err)
+				os.Exit(1)
+			}
+			msg := watcherNotify{
+				pin: gw.pins[fd],
+			}
+			c := buf[0]
+			switch c {
+			case '0':
+				msg.value = 0
+			case '1':
+				msg.value = 1
+			default:
+				fmt.Printf("read inconsistent value in pinfile, %c", c)
+				os.Exit(1)
+			}
 			select {
-			case gw.notifyChan <- fd:
+			case gw.notifyChan <- msg:
 			default:
 			}
 		}
@@ -197,18 +196,52 @@ func (gw *GpioWatcher) fdSelect() {
 	}
 }
 
+func (gw *GpioWatcher) addPin(p rpio.Pin) {
+	f, err := os.Open(fmt.Sprintf("/sys/class/gpio/gpio%d/value", p))
+	if err != nil {
+		fmt.Printf("failed to open gpio %d value file for reading\n", p)
+		os.Exit(1)
+	}
+	fd := f.Fd()
+	gw.pins[fd] = p
+	gw.files[fd] = f
+	heap.Push(&gw.fds, fd)
+}
+
+func (gw *GpioWatcher) removeFd(fd uintptr) {
+	// heap operates on an array index, so search heap for fd
+	for index, v := range gw.fds {
+		if v == fd {
+			heap.Remove(&gw.fds, index)
+			break
+		}
+	}
+	f := gw.files[fd]
+	f.Close()
+	delete(gw.pins, fd)
+	delete(gw.files, fd)
+}
+
+// removePin is only a wrapper around removeFd
+// it finds fd given pin and then calls removeFd
+func (gw *GpioWatcher) removePin(p rpio.Pin) {
+	// we don't index by pin, so go looking
+	for fd, pin := range gw.pins {
+		if pin == p {
+			// found pin
+			gw.removeFd(fd)
+			return
+		}
+	}
+}
+
 func (gw *GpioWatcher) doCmd(cmd watcherCmd) (shouldContinue bool) {
 	shouldContinue = true
 	switch cmd.action {
 	case watcherAdd:
-		heap.Push(&gw.fds, cmd.fd)
+		gw.addPin(cmd.pin)
 	case watcherRemove:
-		for index, v := range gw.fds {
-			if v == cmd.fd {
-				heap.Remove(&gw.fds, index)
-				break
-			}
-		}
+		gw.removePin(cmd.pin)
 	case watcherClose:
 		shouldContinue = false
 	}
@@ -245,106 +278,60 @@ func (gw *GpioWatcher) watch() {
 	}
 }
 
-func (gw *GpioWatcher) addPin(p rpio.Pin, f *os.File) {
-	gw.Lock()
-	defer gw.Unlock()
-	gw.pins[p] = f
-	gw.files[f.Fd()] = f
+func exportGPIO(p rpio.Pin) {
+	export, err := os.OpenFile("/sys/class/gpio/export", os.O_WRONLY, 0600)
+	if err != nil {
+		fmt.Printf("failed to open gpio export file for writing\n")
+		os.Exit(1)
+	}
+	defer export.Close()
+
+	export.Write([]byte(strconv.Itoa(int(p))))
+
+	dir, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/direction", p), os.O_WRONLY, 0600)
+	if err != nil {
+		fmt.Printf("failed to open gpio %d direction file for writing\n", p)
+		os.Exit(1)
+	}
+	defer dir.Close()
+
+	dir.Write([]byte("in"))
+
+	edge, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/edge", p), os.O_WRONLY, 0600)
+	if err != nil {
+		fmt.Printf("failed to open gpio %d edge file for writing\n", p)
+		os.Exit(1)
+	}
+	defer edge.Close()
+
+	edge.Write([]byte("both"))
 }
 
 func (gw *GpioWatcher) AddPin(p rpio.Pin) {
 	exportGPIO(p)
-	value, err := os.Open(fmt.Sprintf("/sys/class/gpio/gpio%d/value", p))
-	if err != nil {
-		fmt.Printf("failed to open gpio %d value file for reading\n", p)
-		os.Exit(1)
-	}
-	gw.addPin(p, value)
 	gw.cmdChan <- watcherCmd{
-		fd:     value.Fd(),
+		pin:    p,
 		action: watcherAdd,
 	}
 }
 
-func (gw *GpioWatcher) removePin(p rpio.Pin) (fd uintptr) {
-	gw.Lock()
-	defer gw.Unlock()
-	f := gw.pins[p]
-	fd = f.Fd()
-	delete(gw.pins, p)
-	delete(gw.files, fd)
-	f.Close()
-	return fd
-}
-
 func (gw *GpioWatcher) RemovePin(p rpio.Pin) {
-	fd := gw.removePin(p)
 	gw.cmdChan <- watcherCmd{
-		fd:     fd,
+		pin:    p,
 		action: watcherRemove,
 	}
 }
 
-func (gw *GpioWatcher) fetch(fd uintptr) (p rpio.Pin, f *os.File, found bool) {
-	gw.RLock()
-	defer gw.RUnlock()
-	f, found = gw.files[fd]
-	if !found {
-		return 0, nil, false
-	}
-	for p, pfile := range gw.pins {
-		if pfile == f {
-			return p, f, true
-		}
-	}
-	// if we get here, it's an inconsistency
-	panic("gpiowatcher found a matching fd in fetch but no pin")
-}
-
 func (gw *GpioWatcher) Watch() (p rpio.Pin, v uint) {
-	// we run a forever loop so that we can discard events for closed files
-	for {
-		eventFd := <-gw.notifyChan
-		pin, file, found := gw.fetch(eventFd)
-		if !found {
-			continue
-		}
-		file.Seek(0, 0)
-		buf := make([]byte, 1)
-		_, err := file.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				gw.removePin(pin)
-				continue
-			}
-			fmt.Printf("failed to read pinfile, %s", err)
-			os.Exit(1)
-		}
-		c := buf[0]
-		switch c {
-		case '0':
-			return pin, 0
-		case '1':
-			return pin, 1
-		default:
-			fmt.Printf("read inconsistent value in pinfile, %c", c)
-			os.Exit(1)
-		}
-	}
+	notification := <-gw.notifyChan
+	return notification.pin, notification.value
 }
 
 func (gw *GpioWatcher) Close() {
-	gw.Lock()
-	defer gw.Unlock()
 	gw.cmdChan <- watcherCmd{
-		fd:     0,
+		pin:    0,
 		action: watcherClose,
 	}
-	for _, f := range gw.files {
-		f.Close()
-	}
-	gw.pins = nil
-	gw.files = nil
 }
 
 func main() {
