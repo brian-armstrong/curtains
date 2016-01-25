@@ -235,6 +235,9 @@ func (gw *GpioWatcher) watch() {
 		// first we do a syscall.select with timeout if we have any fds to check
 		if len(gw.fds) != 0 {
 			gw.fdSelect()
+		} else {
+			// so that we don't churn when the fdset is empty, sleep as if in select call
+			time.Sleep(1 * time.Second)
 		}
 		if gw.recv() == false {
 			return
