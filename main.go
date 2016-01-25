@@ -215,22 +215,29 @@ func (gw *GpioWatcher) doCmd(cmd watcherCmd) (shouldContinue bool) {
 	return shouldContinue
 }
 
+func (gw *GpioWatcher) recv() (shouldContinue bool) {
+	for {
+		select {
+		case cmd := <-gw.cmdChan:
+			shouldContinue = gw.doCmd(cmd)
+			if !shouldContinue {
+				return
+			}
+		default:
+			shouldContinue = true
+			return
+		}
+	}
+}
+
 func (gw *GpioWatcher) watch() {
 	for {
 		// first we do a syscall.select with timeout if we have any fds to check
 		if len(gw.fds) != 0 {
 			gw.fdSelect()
 		}
-		for {
-			select {
-			case cmd := <-gw.cmdChan:
-				shouldContinue := gw.doCmd(cmd)
-				if !shouldContinue {
-					return
-				}
-			default:
-				break
-			}
+		if gw.recv() == false {
+			return
 		}
 	}
 }
@@ -359,7 +366,7 @@ func main() {
 
 	motor := NewMotor(MotorLeft, MotorRight)
 
-	for x := 0; x < 20; x++ {
+	for x := 0; x < 5; x++ {
 		motor.Clockwise()
 		time.Sleep(time.Second)
 		motor.Stop()
