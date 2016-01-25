@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type pin uint
+type Pin uint
 
 type watcherAction int
 
@@ -21,12 +21,12 @@ const (
 )
 
 type watcherCmd struct {
-	pin    pin
+	pin    Pin
 	action watcherAction
 }
 
 type watcherNotify struct {
-	pin   pin
+	pin   Pin
 	value uint
 }
 
@@ -62,7 +62,7 @@ const watcherCmdChanLen = 32
 const notifyChanLen = 32
 
 type GpioWatcher struct {
-	pins       map[uintptr]pin
+	pins       map[uintptr]Pin
 	files      map[uintptr]*os.File
 	fds        FDHeap
 	cmdChan    chan watcherCmd
@@ -71,7 +71,7 @@ type GpioWatcher struct {
 
 func NewGpioWatcher() *GpioWatcher {
 	gw := &GpioWatcher{
-		pins:       make(map[uintptr]pin),
+		pins:       make(map[uintptr]Pin),
 		files:      make(map[uintptr]*os.File),
 		fds:        FDHeap{},
 		cmdChan:    make(chan watcherCmd, watcherCmdChanLen),
@@ -134,7 +134,7 @@ func (gw *GpioWatcher) fdSelect() {
 	}
 }
 
-func (gw *GpioWatcher) addPin(p pin) {
+func (gw *GpioWatcher) addPin(p Pin) {
 	f, err := os.Open(fmt.Sprintf("/sys/class/gpio/gpio%d/value", p))
 	if err != nil {
 		fmt.Printf("failed to open gpio %d value file for reading\n", p)
@@ -162,7 +162,7 @@ func (gw *GpioWatcher) removeFd(fd uintptr) {
 
 // removePin is only a wrapper around removeFd
 // it finds fd given pin and then calls removeFd
-func (gw *GpioWatcher) removePin(p pin) {
+func (gw *GpioWatcher) removePin(p Pin) {
 	// we don't index by pin, so go looking
 	for fd, pin := range gw.pins {
 		if pin == p {
@@ -216,7 +216,7 @@ func (gw *GpioWatcher) watch() {
 	}
 }
 
-func exportGPIO(p pin) {
+func exportGPIO(p Pin) {
 	export, err := os.OpenFile("/sys/class/gpio/export", os.O_WRONLY, 0600)
 	if err != nil {
 		fmt.Printf("failed to open gpio export file for writing\n")
@@ -245,7 +245,7 @@ func exportGPIO(p pin) {
 	edge.Write([]byte("both"))
 }
 
-func (gw *GpioWatcher) AddPin(p pin) {
+func (gw *GpioWatcher) AddPin(p Pin) {
 	exportGPIO(p)
 	gw.cmdChan <- watcherCmd{
 		pin:    p,
@@ -253,14 +253,14 @@ func (gw *GpioWatcher) AddPin(p pin) {
 	}
 }
 
-func (gw *GpioWatcher) RemovePin(p pin) {
+func (gw *GpioWatcher) RemovePin(p Pin) {
 	gw.cmdChan <- watcherCmd{
 		pin:    p,
 		action: watcherRemove,
 	}
 }
 
-func (gw *GpioWatcher) Watch() (p pin, v uint) {
+func (gw *GpioWatcher) Watch() (p Pin, v uint) {
 	notification := <-gw.notifyChan
 	return notification.pin, notification.value
 }

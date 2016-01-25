@@ -73,8 +73,8 @@ func (m *Motor) Stop() {
 }
 func main() {
 	watcher := gpiowatcher.NewGpioWatcher()
-	watcher.AddPin(uint(SwitchLeft))
-	watcher.AddPin(uint(SwitchRight))
+	watcher.AddPin(SwitchLeft)
+	watcher.AddPin(SwitchRight)
 	defer watcher.Close()
 
 	go func() {
