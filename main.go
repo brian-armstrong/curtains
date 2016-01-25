@@ -187,7 +187,7 @@ func (gw *GpioWatcher) fdSelect() {
 		Usec: 0,
 	}
 	fdset := gw.fds.FdSet()
-	n, err := syscall.Select(int(gw.fds[0]+1), fdset, nil, nil, timeval)
+	n, err := syscall.Select(int(gw.fds[0]+1), nil, nil, fdset, timeval)
 	if err != nil {
 		fmt.Printf("failed to call syscall.Select, %s", err)
 		os.Exit(1)
