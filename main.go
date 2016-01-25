@@ -20,8 +20,8 @@ const (
 const (
 	MotorLeft   rpio.Pin = GPIO22
 	MotorRight           = GPIO23
-	SwitchLeft  rpio.Pin = GPIO17
-	SwitchRight rpio.Pin = GPIO27
+	SwitchLeft           = GPIO17
+	SwitchRight          = GPIO27
 )
 
 type MotorDirection int
@@ -73,8 +73,8 @@ func (m *Motor) Stop() {
 }
 func main() {
 	watcher := gpiowatcher.NewGpioWatcher()
-	watcher.AddPin(SwitchLeft)
-	watcher.AddPin(SwitchRight)
+	watcher.AddPin(uint(SwitchLeft))
+	watcher.AddPin(uint(SwitchRight))
 	defer watcher.Close()
 
 	go func() {
