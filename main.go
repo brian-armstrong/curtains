@@ -93,6 +93,9 @@ func main() {
 
 	motor := NewMotor(MotorLeft, MotorRight)
 
+	SwitchLeft.PullUp()
+	SwitchRight.PullUp()
+
 	for x := 0; x < 5; x++ {
 		motor.Clockwise()
 		time.Sleep(time.Second)
