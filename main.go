@@ -12,9 +12,9 @@ import (
 
 const (
 	GPIO17 rpio.Pin = 17 // header pin 11
-	GPIO22          = 22 // header pin 15
-	GPIO23          = 23 // header pin 16
-	GPIO27          = 27 // header pin 13
+	GPIO22 rpio.Pin = 22 // header pin 15
+	GPIO23 rpio.Pin = 23 // header pin 16
+	GPIO27 rpio.Pin = 27 // header pin 13
 )
 
 const (
