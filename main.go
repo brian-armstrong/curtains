@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	GPIO17 rpio.Pin = 17 // header pin 11
-	GPIO22 rpio.Pin = 22 // header pin 15
-	GPIO23 rpio.Pin = 23 // header pin 16
-	GPIO27 rpio.Pin = 27 // header pin 13
+	GPIO17 uint = 17 // header pin 11
+	GPIO22 uint = 22 // header pin 15
+	GPIO23 uint = 23 // header pin 16
+	GPIO27 uint = 27 // header pin 13
 )
 
 const (
-	MotorLeft   rpio.Pin = GPIO22
-	MotorRight           = GPIO23
-	SwitchLeft           = GPIO17
-	SwitchRight          = GPIO27
+	MotorLeft   uint = GPIO22
+	MotorRight  uint = GPIO23
+	SwitchLeft  uint = GPIO17
+	SwitchRight uint = GPIO27
 )
 
 type MotorDirection int
@@ -33,23 +33,17 @@ const (
 )
 
 type Motor struct {
-	left      rpio.Pin
-	right     rpio.Pin
+	left      gpio.Pin
+	right     gpio.Pin
 	direction MotorDirection
 }
 
-func NewMotor(left rpio.Pin, right rpio.Pin) *Motor {
+func NewMotor(left uint, right uint) *Motor {
 	m := Motor{
-		left:      left,
-		right:     right,
+		left:      gpio.NewOutput(left, true),
+		right:     gpio.NewOutput(right, true),
 		direction: StopDirection,
 	}
-
-	m.left.High()
-	m.right.High()
-
-	m.left.Output()
-	m.right.Output()
 
 	return &m
 }
@@ -73,8 +67,8 @@ func (m *Motor) Stop() {
 }
 func main() {
 	watcher := gpio.NewWatcher()
-	watcher.AddPin(uint(SwitchLeft))
-	watcher.AddPin(uint(SwitchRight))
+	watcher.AddPin(SwitchLeft)
+	watcher.AddPin(SwitchRight)
 	defer watcher.Close()
 
 	go func() {
@@ -84,17 +78,18 @@ func main() {
 		}
 	}()
 
+	motor := NewMotor(MotorLeft, MotorRight)
+
 	if err := rpio.Open(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
 	defer rpio.Close()
 
-	motor := NewMotor(MotorLeft, MotorRight)
-
-	SwitchLeft.PullUp()
-	SwitchRight.PullUp()
+	rpioSwitchLeft := rpio.Pin(SwitchLeft)
+	rpioSwitchRight := rpio.Pin(SwitchRight)
+	rpioSwitchLeft.PullUp()
+	rpioSwitchRight.PullUp()
 
 	for x := 0; x < 5; x++ {
 		motor.Clockwise()
