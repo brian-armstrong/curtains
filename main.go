@@ -89,13 +89,17 @@ type Debouncer struct {
 }
 
 func (d Debouncer) Push(level uint) bool {
+	if level == d.lastEmitLevel {
+		return false
+	}
+
 	now := time.Now()
-	fmt.Printf("debouncing %d\n", level)
 	if now.After(d.lastEmitTime.Add(emitSilenceDuration)) {
 		d.lastEmitTime = now
 		d.lastEmitLevel = level
 		return true
 	}
+
 	return false
 }
 
