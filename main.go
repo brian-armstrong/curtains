@@ -80,7 +80,7 @@ func (m *Motor) Stop() {
 	m.direction = StopDirection
 }
 
-const emitSilenceDuration = time.Duration(10 * time.Millisecond)
+const emitSilenceDuration = time.Duration(1000 * time.Millisecond)
 const switchActiveLevel = uint(0) // active low or active high
 
 type Debouncer struct {
@@ -90,6 +90,7 @@ type Debouncer struct {
 
 func (d Debouncer) Push(level uint) bool {
 	now := time.Now()
+	fmt.Printf("debouncing %d\n", level)
 	if now.After(d.lastEmitTime.Add(emitSilenceDuration)) {
 		d.lastEmitTime = now
 		d.lastEmitLevel = level
@@ -113,7 +114,6 @@ func NewCurtains() *Curtains {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	defer rpio.Close()
 
 	rpioSwitchLeft := rpio.Pin(SwitchLeft)
 	rpioSwitchRight := rpio.Pin(SwitchRight)
@@ -123,7 +123,6 @@ func NewCurtains() *Curtains {
 	watcher := gpio.NewWatcher()
 	watcher.AddPin(SwitchLeft)
 	watcher.AddPin(SwitchRight)
-	defer watcher.Close()
 
 	motor := NewMotor(MotorLeft, MotorRight)
 
