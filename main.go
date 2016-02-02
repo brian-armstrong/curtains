@@ -267,13 +267,13 @@ func controlCurtains(c *Curtains) {
 
 		if sunrise.Before(sunset) {
 			fmt.Printf("sleeping until %s for sunrise\n", sunrise)
-			time.Sleep(now.Sub(sunrise))
+			time.Sleep(sunrise.Sub(now))
 			c.Move(1)
 			continue
 		}
 
 		fmt.Printf("sleeping until %s for sunset\n", sunset)
-		time.Sleep(now.Sub(sunset))
+		time.Sleep(sunset.Sub(now))
 		c.Move(0)
 	}
 }
