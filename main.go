@@ -141,6 +141,7 @@ func NewCurtains() *Curtains {
 	c.debouncing[SwitchRight] = Debouncer{}
 
 	go c.switchNotifier()
+	go c.listen()
 
 	return c
 }
