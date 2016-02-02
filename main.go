@@ -88,12 +88,12 @@ type Debouncer struct {
 	lastEmitLevel uint
 }
 
-func (d Debouncer) update(newTime time.Time, newLevel uint) {
+func (d *Debouncer) update(newTime time.Time, newLevel uint) {
 	d.lastEmitTime = newTime
 	d.lastEmitLevel = newLevel
 }
 
-func (d Debouncer) Push(level uint) bool {
+func (d *Debouncer) Push(level uint) bool {
 	now := time.Now()
 	if d.lastEmitTime.IsZero() {
 		d.update(now, level)
