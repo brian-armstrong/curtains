@@ -8,6 +8,7 @@ import (
 
 	"github.com/brian-armstrong/gpio"
 
+	"github.com/cpucycle/astrotime"
 	"github.com/stianeikeland/go-rpio"
 )
 
@@ -255,26 +256,31 @@ func (c *Curtains) Close() {
 	rpio.Close()
 }
 
+const sflat = float64(37.7833)
+const sflon = float64(122.4167)
+
+func controlCurtains(c *Curtains) {
+	for {
+		now := time.Now()
+		sunrise := astrotime.NextSunrise(now, sflat, sflon)
+		sunset := astrotime.NextSunset(now, sflat, sflon)
+
+		if sunrise.Before(sunset) {
+			fmt.Printf("sleeping until %s for sunrise\n", sunrise)
+			time.Sleep(now.Sub(sunrise))
+			c.Move(1)
+			continue
+		}
+
+		fmt.Printf("sleeping until %s for sunset\n", sunset)
+		time.Sleep(now.Sub(sunset))
+		c.Move(0)
+	}
+}
+
 func main() {
 	c := NewCurtains()
 	defer c.Close()
 
-	char := make([]byte, 1)
-	for {
-		if _, err := os.Stdin.Read(char); err != nil {
-			os.Exit(1)
-		}
-		quit := false
-		switch char[0] {
-		case 'r':
-			c.Move(1)
-		case 'l':
-			c.Move(0)
-		case 'x':
-			quit = true
-		}
-		if quit {
-			break
-		}
-	}
+	controlCurtains(c)
 }
