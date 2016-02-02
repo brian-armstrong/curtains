@@ -115,7 +115,7 @@ func (d *Debouncer) Push(level uint) bool {
 type Curtains struct {
 	motor      *Motor
 	watcher    *gpio.Watcher
-	debouncing map[uint]Debouncer
+	debouncing map[uint]*Debouncer
 	switchChan chan uint
 	position   float32
 	command    chan float32
@@ -142,15 +142,15 @@ func NewCurtains() *Curtains {
 	c := &Curtains{
 		motor:      motor,
 		watcher:    watcher,
-		debouncing: make(map[uint]Debouncer),
+		debouncing: make(map[uint]*Debouncer),
 		switchChan: make(chan uint),
 		position:   0,
 		command:    make(chan float32),
 		respond:    make(chan struct{}),
 	}
 
-	c.debouncing[SwitchLeft] = Debouncer{}
-	c.debouncing[SwitchRight] = Debouncer{}
+	c.debouncing[SwitchLeft] = &Debouncer{}
+	c.debouncing[SwitchRight] = &Debouncer{}
 
 	go c.switchNotifier()
 	go c.listen()
