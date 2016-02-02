@@ -197,8 +197,10 @@ func (c *Curtains) move(newPosition float32) {
 	select {
 	case <-timer.C:
 		// time ran out
-	case *reachedStop = <-c.switchChan:
+	case stop := <-c.switchChan:
 		// reached the hard stop
+		reachedStop = new(uint)
+		*reachedStop = stop
 	}
 
 	c.motor.Stop()
