@@ -174,9 +174,18 @@ func (c *Curtains) moveDuration(pos float32) time.Duration {
 }
 
 func (c *Curtains) moveDirection(pos float32) MotorDirection {
+	if c.position == 1 {
+		return ClockwiseDirection
+	}
+
+	if c.position == 0 {
+		return CounterclockwiseDirection
+	}
+
 	if pos > c.position {
 		return ClockwiseDirection
 	}
+
 	return CounterclockwiseDirection
 }
 
