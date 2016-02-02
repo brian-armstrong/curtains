@@ -88,15 +88,24 @@ type Debouncer struct {
 	lastEmitLevel uint
 }
 
+func (d Debouncer) update(newTime time.Time, newLevel uint) {
+	d.lastEmitTime = newTime
+	d.lastEmitLevel = newLevel
+}
+
 func (d Debouncer) Push(level uint) bool {
+	now := time.Now()
+	if d.lastEmitTime.IsZero() {
+		d.update(now, level)
+		return true
+	}
+
 	if level == d.lastEmitLevel {
 		return false
 	}
 
-	now := time.Now()
 	if now.After(d.lastEmitTime.Add(emitSilenceDuration)) {
-		d.lastEmitTime = now
-		d.lastEmitLevel = level
+		d.update(now, level)
 		return true
 	}
 
