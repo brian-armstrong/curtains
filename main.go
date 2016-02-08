@@ -90,7 +90,7 @@ func controlCurtains(c *Controller) {
 
 	http.HandleFunc("/open", closure(doOpenRequest))
 	http.HandleFunc("/close", closure(doCloseRequest))
-	err := http.ListenAndServe(":80", nil)
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("http listen failed, ", err)
 	}
