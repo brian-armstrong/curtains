@@ -88,20 +88,22 @@ func controlCurtains(c *Controller) {
 		}
 	}
 
+	go func() {
+		for {
+			select {
+			case ev := <-sun:
+				doSunCmd(c, ev)
+			case ev := <-request:
+				doRequestCmd(c, ev)
+			}
+		}
+	}()
+
 	http.HandleFunc("/open", closure(doOpenRequest))
 	http.HandleFunc("/close", closure(doCloseRequest))
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("http listen failed, ", err)
-	}
-
-	for {
-		select {
-		case ev := <-sun:
-			doSunCmd(c, ev)
-		case ev := <-request:
-			doRequestCmd(c, ev)
-		}
 	}
 }
 
