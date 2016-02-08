@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"time"
 
@@ -118,8 +119,8 @@ type Curtains struct {
 	watcher    *gpio.Watcher
 	debouncing map[uint]*Debouncer
 	switchChan chan uint
-	position   float32
-	command    chan float32
+	position   float64
+	command    chan float64
 	respond    chan struct{}
 }
 
@@ -146,7 +147,7 @@ func NewCurtains() *Curtains {
 		debouncing: make(map[uint]*Debouncer),
 		switchChan: make(chan uint),
 		position:   0,
-		command:    make(chan float32),
+		command:    make(chan float64),
 		respond:    make(chan struct{}),
 	}
 
@@ -169,12 +170,12 @@ func (c *Curtains) switchNotifier() {
 	}
 }
 
-func (c *Curtains) moveDuration(pos float32) time.Duration {
+func (c *Curtains) moveDuration(newPos float64) time.Duration {
 	// TODO actual time
-	return time.Duration(30 * time.Second)
+	return time.Duration(math.Abs(newPos-c.position)*30) * time.Second
 }
 
-func (c *Curtains) moveDirection(pos float32) MotorDirection {
+func (c *Curtains) moveDirection(newPos float64) MotorDirection {
 	if c.position == 1 {
 		return ClockwiseDirection
 	}
@@ -183,7 +184,7 @@ func (c *Curtains) moveDirection(pos float32) MotorDirection {
 		return CounterclockwiseDirection
 	}
 
-	if pos > c.position {
+	if newPos > c.position {
 		return ClockwiseDirection
 	}
 
@@ -206,7 +207,7 @@ func (c *Curtains) reckon(dur time.Duration, dir MotorDirection, reachedStop *ui
 	// TODO actual calculations
 }
 
-func (c *Curtains) move(newPosition float32) {
+func (c *Curtains) move(newPosition float64) {
 	d := c.moveDuration(newPosition)
 	dir := c.moveDirection(newPosition)
 	timer := time.NewTimer(d)
@@ -246,7 +247,7 @@ func (c *Curtains) listen() {
 	}
 }
 
-func (c *Curtains) Move(newPosition float32) {
+func (c *Curtains) Move(newPosition float64) {
 	c.command <- newPosition
 	<-c.respond
 }
