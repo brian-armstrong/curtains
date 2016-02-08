@@ -10,7 +10,7 @@ import (
 const sflat = float64(37.7833)
 const sflon = float64(122.4167)
 
-func controlCurtains(c *Curtains) {
+func controlCurtains(c *Controller) {
 	for {
 		now := time.Now()
 		sunrise := astrotime.NextSunrise(now, sflat, sflon)
@@ -30,7 +30,7 @@ func controlCurtains(c *Curtains) {
 }
 
 func main() {
-	c := NewCurtains()
+	c := NewController()
 	defer c.Close()
 
 	controlCurtains(c)

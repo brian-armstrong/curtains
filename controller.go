@@ -11,7 +11,7 @@ import (
 	"github.com/stianeikeland/go-rpio"
 )
 
-type Curtains struct {
+type Controller struct {
 	motor      *Motor
 	watcher    *gpio.Watcher
 	debouncing map[uint]*Debouncer
@@ -21,7 +21,7 @@ type Curtains struct {
 	respond    chan struct{}
 }
 
-func NewCurtains() *Curtains {
+func NewController() *Controller {
 	if err := rpio.Open(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -38,7 +38,7 @@ func NewCurtains() *Curtains {
 
 	motor := NewMotor(MotorLeft, MotorRight)
 
-	c := &Curtains{
+	c := &Controller{
 		motor:      motor,
 		watcher:    watcher,
 		debouncing: make(map[uint]*Debouncer),
@@ -57,7 +57,7 @@ func NewCurtains() *Curtains {
 	return c
 }
 
-func (c *Curtains) switchNotifier() {
+func (c *Controller) switchNotifier() {
 	for {
 		pin, value := c.watcher.Watch()
 		debouncer := c.debouncing[pin]
@@ -67,12 +67,12 @@ func (c *Curtains) switchNotifier() {
 	}
 }
 
-func (c *Curtains) moveDuration(newPos float64) time.Duration {
+func (c *Controller) moveDuration(newPos float64) time.Duration {
 	// TODO actual time
 	return time.Duration(math.Abs(newPos-c.position)*30) * time.Second
 }
 
-func (c *Curtains) moveDirection(newPos float64) MotorDirection {
+func (c *Controller) moveDirection(newPos float64) MotorDirection {
 	if c.position == 1 {
 		return ClockwiseDirection
 	}
@@ -88,7 +88,7 @@ func (c *Curtains) moveDirection(newPos float64) MotorDirection {
 	return CounterclockwiseDirection
 }
 
-func (c *Curtains) reckon(dur time.Duration, dir MotorDirection, reachedStop *uint) {
+func (c *Controller) reckon(dur time.Duration, dir MotorDirection, reachedStop *uint) {
 	if reachedStop != nil {
 		switch *reachedStop {
 		case SwitchLeft:
@@ -104,7 +104,7 @@ func (c *Curtains) reckon(dur time.Duration, dir MotorDirection, reachedStop *ui
 	// TODO actual calculations
 }
 
-func (c *Curtains) move(newPosition float64) {
+func (c *Controller) move(newPosition float64) {
 	d := c.moveDuration(newPosition)
 	dir := c.moveDirection(newPosition)
 	timer := time.NewTimer(d)
@@ -132,7 +132,7 @@ func (c *Curtains) move(newPosition float64) {
 }
 
 // we need listen so that we can catch switch changes that happen when the motor is off
-func (c *Curtains) listen() {
+func (c *Controller) listen() {
 	for {
 		select {
 		case newPos := <-c.command:
@@ -144,12 +144,12 @@ func (c *Curtains) listen() {
 	}
 }
 
-func (c *Curtains) Move(newPosition float64) {
+func (c *Controller) Move(newPosition float64) {
 	c.command <- newPosition
 	<-c.respond
 }
 
-func (c *Curtains) Close() {
+func (c *Controller) Close() {
 	c.watcher.Close()
 	rpio.Close()
 }
