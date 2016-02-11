@@ -74,18 +74,18 @@ func (c *Controller) moveDuration(newPos float64) time.Duration {
 
 func (c *Controller) moveDirection(newPos float64) MotorDirection {
 	if c.position == 1 {
-		return ClockwiseDirection
-	}
-
-	if c.position == 0 {
 		return CounterclockwiseDirection
 	}
 
-	if newPos > c.position {
+	if c.position == 0 {
 		return ClockwiseDirection
 	}
 
-	return CounterclockwiseDirection
+	if newPos > c.position {
+		return CounterclockwiseDirection
+	}
+
+	return ClockwiseDirection
 }
 
 func (c *Controller) reckon(dur time.Duration, dir MotorDirection, reachedStop *uint) {
