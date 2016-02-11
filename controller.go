@@ -92,9 +92,9 @@ func (c *Controller) reckon(dur time.Duration, dir MotorDirection, reachedStop *
 	if reachedStop != nil {
 		switch *reachedStop {
 		case SwitchLeft:
-			c.position = 0
-		case SwitchRight:
 			c.position = 1
+		case SwitchRight:
+			c.position = 0
 		default:
 			panic("unrecognized hardstop reached")
 		}
