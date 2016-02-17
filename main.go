@@ -22,7 +22,7 @@ const sflon = float64(122.4167)
 func sendEverySunrise(c chan<- sunEvent) {
 	for {
 		now := time.Now()
-		sunrise := astrotime.NextSunrise(now, sflat, sflon)
+		sunrise := astrotime.NextSunrise(now, sflat, sflon).Add(time.Duration(20) * time.Minute)
 		log.Printf("next sunrise at %s", sunrise)
 		time.Sleep(sunrise.Sub(now))
 		c <- sunriseEvent
@@ -32,7 +32,7 @@ func sendEverySunrise(c chan<- sunEvent) {
 func sendEverySunset(c chan<- sunEvent) {
 	for {
 		now := time.Now()
-		sunset := astrotime.NextSunset(now, sflat, sflon)
+		sunset := astrotime.NextSunset(now, sflat, sflon).Add(-time.Duration(15) * time.Minute)
 		log.Printf("next sunset at %s", sunset)
 		time.Sleep(sunset.Sub(now))
 		c <- sunsetEvent
