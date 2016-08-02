@@ -33,8 +33,8 @@ func sendEverySunrise(c chan<- sunEvent) {
 
 		d := time.Date(now.Year(), now.Month(), now.Day(), 8, 30, 0, 0, tz_la)
 		if d.Before(now) {
-			now = now.Add(24 * time.Hour)
-			d = time.Date(now.Year(), now.Month(), now.Day(), 8, 30, 0, 0, tz_la)
+			tomorrow := now.Add(24 * time.Hour)
+			d = time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 8, 30, 0, 0, tz_la)
 		}
 		log.Printf("next 8:30 AM at %s", d)
 		time.Sleep(d.Sub(now))
