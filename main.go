@@ -19,12 +19,26 @@ const (
 const sflat = float64(37.7833)
 const sflon = float64(122.4167)
 
+var tz_la *time.Location
+
 func sendEverySunrise(c chan<- sunEvent) {
 	for {
 		now := time.Now()
-		sunrise := astrotime.NextSunrise(now, sflat, sflon).Add(time.Duration(20) * time.Minute)
-		log.Printf("next sunrise at %s", sunrise)
-		time.Sleep(sunrise.Sub(now))
+
+		/*
+			sunrise := astrotime.NextSunrise(now, sflat, sflon).Add(time.Duration(20) * time.Minute)
+			log.Printf("next sunrise at %s", sunrise)
+			time.Sleep(sunrise.Sub(now))
+		*/
+
+		d := time.Date(now.Year(), now.Month(), now.Day(), 8, 30, 0, 0, tz_la)
+		if d.Before(now) {
+			now = now.Add(24 * time.Hour)
+			d = time.Date(now.Year(), now.Month(), now.Day(), 8, 30, 0, 0, tz_la)
+		}
+		log.Printf("next 8:30 AM at %s", d)
+		time.Sleep(d.Sub(now))
+
 		c <- sunriseEvent
 	}
 }
@@ -77,6 +91,8 @@ func doRequestCmd(c *Controller, ev requestEvent) {
 }
 
 func controlCurtains(c *Controller) {
+	tz_la, _ = time.LoadLocation("America/Los_Angeles")
+
 	sun := make(chan sunEvent)
 	go sendEverySunrise(sun)
 	go sendEverySunset(sun)
